@@ -1,28 +1,40 @@
+import os
 import telegram
+from telegram.ext import Updater, MessageHandler, Filters
 import openai
 
-# Setup OpenAI API
-openai.api_key = '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'
+# Inisialisasi bot Telegram
+bot = telegram.Bot(token=os.environ.get('6231194913:AAHAKMup6rVe_c64kGZxmiAGO8qfQ2eHXs0'))
 
-# Setup Telegram Bot
-bot = telegram.Bot(token='6231194913:AAHAKMup6rVe_c64kGZxmiAGO8qfQ2eHXs0')
+# Inisialisasi OpenAI API
+openai.api_key = os.environ.get('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')
 
-# Function to respond to Telegram messages
-def respond(bot, update):
-    message = update.message.text
-    # Call OpenAI's GPT-3 API to generate a response
+# Fungsi untuk menangani pesan yang diterima oleh bot
+def handle_message(update, context):
+    # Ambil pesan dari pengguna
+    user_message = update.message.text
+
+    # Kirim pesan ke OpenAI API
     response = openai.Completion.create(
-        engine='davinci',
-        prompt=message,
-        max_tokens=60,
+        engine="davinci",
+        prompt=user_message,
+        max_tokens=100,
         n=1,
         stop=None,
-        temperature=0.5
+        temperature=0.5,
     )
-    bot.send_message(chat_id=update.message.chat_id, text=response.choices[0].text)
 
-# Start Telegram bot
-updater = telegram.ext.Updater(token='6231194913:AAHAKMup6rVe_c64kGZxmiAGO8qfQ2eHXs0')
-updater.dispatcher.add_handler(telegram.ext.MessageHandler(telegram.ext.Filters.text, respond))
+    # Ambil jawaban dari OpenAI API
+    bot_message = response.choices[0].text
+
+    # Kirim jawaban ke pengguna
+    update.message.reply_text(bot_message)
+
+# Buat objek Updater dan jadwalkan pengambilan pesan secara berkala
+updater = Updater(token=os.environ.get('TELEGRAM_TOKEN'), use_context=True)
+dispatcher = updater.dispatcher
+dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_message))
 updater.start_polling()
-updater.idle()
+
+# Tampilkan pesan jika bot berjalan
+print("Bot berjalan...")
